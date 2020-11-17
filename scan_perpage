@@ -111,7 +111,7 @@ process_page() {
 
   status=$?
   # rm $IMAGE_PATH
-  [[ -f $IMAGE_DIR/$PP_PREFIX${IMAGE_FILE} ]] && rm $IMAGE_DIR/$PP_PREFIX${IMAGE_FILE}
+  # [[ -f $IMAGE_DIR/$PP_PREFIX${IMAGE_FILE} ]] && rm $IMAGE_DIR/$PP_PREFIX${IMAGE_FILE}
 
   log ""
   log "Scan page processing done, status = $status"
