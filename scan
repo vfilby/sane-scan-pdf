@@ -29,13 +29,8 @@ DESKEW=0
 DRIVER_OPTION=
 VERBOSE=0
 SKIP_EMPTY_PAGES=0
+DIRECTORY=
 
-TMP_DIR=$(mktemp -d -p "" scan.XXXXXXXXXX)
-cleanup()
-{
-  rm -rf "$TMP_DIR"
-}
-trap cleanup EXIT
 
 # Parse command-line options
 while [[ $# > 0 ]]; do
@@ -84,6 +79,8 @@ while [[ $# > 0 ]]; do
   -x|--device) shift; DEVICE=$1;;
 
   -xo|--driver-options) shift; DRIVER_OPTION=$1;;
+
+  -dir|--directory) shift; DIRECTORY=$1 ;;
 
   *) if [[ $USEARRAY == 1 ]]; then OUTPUTARR+=("$1"); else echo >&2 "Unknown argument: $1"; exit 1; fi ;;
 
@@ -243,11 +240,43 @@ if [[ $VERBOSE == 1 ]]; then
   export LOCKFILE
 fi;
 
-echo >&2 "Scanning..."
-#eval strace -f -o /tmp/scan-trace.txt scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $SOURCE -o scan-%04d
-eval scanadf -d "$DEVICE" $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $DRIVER_OPTION $SOURCE -o $TMP_DIR/scan-%04d
 
 shopt -s extglob nullglob
+
+if [[ $DIRECTORY == "" ]]; then
+
+  TMP_DIR=$(mktemp -d -p "" scan.XXXXXXXXXX)
+  cleanup()
+  {
+    rm -rf "$TMP_DIR"
+  }
+  trap cleanup EXIT
+
+  echo >&2 "Scanning..."
+  #eval strace -f -o /tmp/scan-trace.txt scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $SOURCE -o scan-%04d
+  eval scanadf -d "$DEVICE" $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $DRIVER_OPTION $SOURCE -o $TMP_DIR/scan-%04d
+else
+  echo >&2 "Reading images from directory: $DIRECTORY..."
+  TMP_DIR=$DIRECTORY  
+  
+  datafiles=($TMP_DIR/scan-[0-9]*)
+  numdatafiles=${#datafiles[@]}
+  if [[ $numdatafiles > 0 ]]; then
+    echo >&2 "Processing $numdatafiles scans"
+
+    index=0
+    while [[ "$index" < "$numdatafiles" ]]; do
+      let "scanno =  $index + 1"
+      echo >&2 "Processing single page: ${datafiles[$index]}"
+      $SCRIPT ${datafiles[$index]}
+      let "index = $index + 1"
+    done
+  else
+    echo >&2 "No files found."
+    exit
+  fi
+fi
+
 pdffiles=($TMP_DIR/scan-[0-9]*.pdf)
 numscans=${#pdffiles[@]}
 if [[ $numscans > 0 ]]; then
