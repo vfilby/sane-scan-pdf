@@ -31,6 +31,12 @@ VERBOSE=0
 SKIP_EMPTY_PAGES=0
 DIRECTORY=
 
+TMP_DIR=$(mktemp -d -p "" scan.XXXXXXXXXX)
+cleanup()
+{
+  rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
 
 # Parse command-line options
 while [[ $# > 0 ]]; do
@@ -131,6 +137,9 @@ if [[ $HELP == 1 ]]; then
   echo "   which language to use for OCR"
   echo " --skip-empty-pages"
   echo "   remove empty pages from resulting PDF document (e.g. one sided doc in duplex mode)"
+  echo " -dir"
+  echo "   Read scanned data from a directory cantaining a files that match the pattern scan-[0-9]+"
+  echo "   This option will not trigger the scanner"
   echo ""
   echo "OUTPUT"
   echo " -o, --output <outputfile>"
@@ -245,20 +254,16 @@ shopt -s extglob nullglob
 
 if [[ $DIRECTORY == "" ]]; then
 
-  TMP_DIR=$(mktemp -d -p "" scan.XXXXXXXXXX)
-  cleanup()
-  {
-    rm -rf "$TMP_DIR"
-  }
-  trap cleanup EXIT
-
   echo >&2 "Scanning..."
   #eval strace -f -o /tmp/scan-trace.txt scanadf -d $DEVICE $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $SOURCE -o scan-%04d
   eval scanadf -d "$DEVICE" $MAXPAGE $PGHEIGHT $PGWIDTH -S $SCRIPT --script-wait --resolution $RESOLUTION --mode $MODE $DESKEW $CROP $DRIVER_OPTION $SOURCE -o $TMP_DIR/scan-%04d
+
 else
+  # clean up the tmp file that was created for scanning since it won't be used.
+  cleanup()
   echo >&2 "Reading images from directory: $DIRECTORY..."
-  TMP_DIR=$DIRECTORY  
-  
+  TMP_DIR=$DIRECTORY
+
   datafiles=($TMP_DIR/scan-[0-9]*)
   numdatafiles=${#datafiles[@]}
   if [[ $numdatafiles > 0 ]]; then
