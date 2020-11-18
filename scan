@@ -332,6 +332,11 @@ if [[ $numscans > 0 ]]; then
       mv $TMP_DIR/scan-0*.pdf "$OUTPUT"
     fi
   fi
+
+  if [[ $DIRECTORY != "" ]]; then
+    rmdir $DIRECTORY
+  fi
+  
   echo ""
   echo "Done."
 else
