@@ -260,7 +260,7 @@ if [[ $DIRECTORY == "" ]]; then
 
 else
   # clean up the tmp file that was created for scanning since it won't be used.
-  cleanup()
+  cleanup
   echo >&2 "Reading images from directory: $DIRECTORY..."
   TMP_DIR=$DIRECTORY
 
@@ -336,7 +336,7 @@ if [[ $numscans > 0 ]]; then
   if [[ $DIRECTORY != "" ]]; then
     rmdir $DIRECTORY
   fi
-  
+
   echo ""
   echo "Done."
 else
